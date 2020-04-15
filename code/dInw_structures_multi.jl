@@ -179,6 +179,7 @@ struct _trainer
     upd_count_out::Array{Float32, 1}
     update_in::BitArray{2}
     update_out::BitArray{1}
+    select::Array{Int, 1}
     function _trainer(
             inw::InfluenceNetwork;
             g_init::Array{Float32, 2} = Array{Float32, 2}(undef, 0, 0),
@@ -209,14 +210,14 @@ struct _trainer
         upd_count_out = Array{Float32, 1}(undef, inw.n_)
         update_in = BitArray{2}(undef, inw.n_, inw.n_)
         update_out = BitArray{1}(undef, inw.n_)
-        return new(g_init, g_in, g_out, mom_init, mom_in, mom_out, upd_count_in, upd_count_out, update_in, update_out)
+        select::Array{Int, 1} = Array{Int, 1}(undef, inw.n)
+        return new(g_init, g_in, g_out, mom_init, mom_in, mom_out, upd_count_in, upd_count_out, update_in, update_out, select)
     end
 end 
 
 
 struct _internal
     out::Array{Float32, 1}
-    select::Array{Int, 1}
     w_init::Array{Float32, 1} 
     w_in::Array{Float32, 2} 
     w_out::Array{Float32, 1}
@@ -236,7 +237,6 @@ struct _internal
     g_loss_::Array{Float32, 2}
     function _internal(inw::InfluenceNetwork)
         out::Array{Float32, 1} = Array{Float32, 1}(undef, inw.m)
-        select::Array{Int, 1} = Array{Int, 1}(undef, inw.n)
         w_init::Array{Float32, 1} = Array{Float32, 1}(undef, inw.n)
         w_in::Array{Float32, 2} = Array{Float32, 2}(undef, inw.n, inw.n)
         w_out::Array{Float32, 1} = Array{Float32, 1}(undef, inw.n)
@@ -254,7 +254,7 @@ struct _internal
         g_init_::Array{Float32, 2} = Array{Float32, 2}(undef, inw.n, inw.n)
         g_in_::Array{Float32, 2} = Array{Float32, 2}(undef, inw.n, inw.n^2)
         g_loss_::Array{Float32, 2} = Array{Float32, 2}(undef, inw.m, inw.m)
-        return new(out, select, w_init, w_in, w_out, s, z, expZ, t_1, t_2, num, dnom, g_init, g_in, g_out, g_loss, g_init_, g_in_, g_loss_)
+        return new(out, w_init, w_in, w_out, s, z, expZ, t_1, t_2, num, dnom, g_init, g_in, g_out, g_loss, g_init_, g_in_, g_loss_)
     end
 end
 

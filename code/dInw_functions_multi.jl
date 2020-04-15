@@ -3,7 +3,7 @@ using Random
 using Statistics
 
 #cd("C:/Users/Marius/Documents/INW/DecisionInfluenceNetwork/code")
-#include("dInw_structures_multi.jl")
+include("./dInw_structures_multi.jl")
 
 
 function train!(
@@ -26,7 +26,6 @@ function train!(
     batches::Array{Int, 1} = shuffle(p.testSize+1:n)
     for i in 1:p.maxIter
         for j in 1:length(batchIds)-1
-            print(string(j))
             _train!(
                 dInw.inw, 
                 dInw.data.X[batches[batchIds[j]:batchIds[j+1]-1],:], 
@@ -147,8 +146,9 @@ function _train!(
     trainer.upd_count_out .= 1f0
     for i in 1:size(Y)[1]
         # compute local gradients
+        trainer.select .= X[i,:] .+ inw.index
         for j in 1:size(Y)[2]
-            set_internal!(internal, inw, X[i,:], j)
+            set_internal!(internal, inw, trainer.select, j)
             forward_prop!(internal, inw)
             internal.g_init[:,j] .= internal.g_init_'*internal.w_out
             internal.g_in[:,j] .= internal.g_in_'*internal.w_out 
@@ -157,12 +157,12 @@ function _train!(
         end
         back_prop!(internal, Y[i,:], inw)
         # update global gradients
-        trainer.g_init[internal.select, :] .+= internal.g_init
-        trainer.g_in[internal.select, internal.select, :] .+= reshape(internal.g_in, inw.n, inw.n, inw.m)
+        trainer.g_init[trainer.select, :] .+= internal.g_init
+        trainer.g_in[trainer.select, trainer.select, :] .+= reshape(internal.g_in, inw.n, inw.n, inw.m)
         trainer.g_in .*= inw.free
-        trainer.g_out[internal.select, :] .+= internal.g_out  
-        trainer.upd_count_in[internal.select, internal.select] .+= 1f0
-        trainer.upd_count_out[internal.select] .+= 1f0
+        trainer.g_out[trainer.select, :] .+= internal.g_out  
+        trainer.upd_count_in[trainer.select, trainer.select] .+= 1f0
+        trainer.upd_count_out[trainer.select] .+= 1f0
     end
     #trainer.update_in .= trainer.upd_count_in .> 1f0
     #trainer.update_out .= trainer.upd_count_out .> 1f0
@@ -182,13 +182,12 @@ end
 function set_internal!(
         internal::_internal,
         inw::InfluenceNetwork, 
-        x::Array{Int, 1},
+        select::Array{Int, 1},
         j::Int)::Nothing
-    internal.select .= x.+inw.index
     internal.s .= 1f0
-    internal.w_init .= inw.w_init[internal.select, j]
-    internal.w_in .= inw.w_in[internal.select, internal.select, j]
-    internal.w_out .= inw.w_out[internal.select, j]
+    internal.w_init .= inw.w_init[select, j]
+    internal.w_in .= inw.w_in[select, select, j]
+    internal.w_out .= inw.w_out[select, j]
     internal.g_init_ .= 0f0
     internal.g_in_ .= 0f0
     return nothing
